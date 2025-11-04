@@ -391,11 +391,11 @@ export default function Projetos() {
 
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5">
+        <Card className="rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/20 rounded-lg">
-                <FileText className="w-4 h-4 text-blue-600" />
+              <div className="p-2 bg-primary/20 rounded-lg">
+                <FileText className="w-4 h-4 text-primary" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total de Projetos</p>
@@ -405,11 +405,11 @@ export default function Projetos() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl bg-gradient-to-br from-orange-500/10 to-orange-600/5">
+        <Card className="rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-500/20 rounded-lg">
-                <PlayCircle className="w-4 h-4 text-orange-600" />
+              <div className="p-2 bg-primary/20 rounded-lg">
+                <PlayCircle className="w-4 h-4 text-primary" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Em Andamento</p>
@@ -419,11 +419,11 @@ export default function Projetos() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/5">
+        <Card className="rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/20 rounded-lg">
-                <CheckCircle className="w-4 h-4 text-green-600" />
+              <div className="p-2 bg-primary/20 rounded-lg">
+                <CheckCircle className="w-4 h-4 text-primary" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Concluídos</p>
@@ -433,11 +433,11 @@ export default function Projetos() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5">
+        <Card className="rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-500/20 rounded-lg">
-                <DollarSign className="w-4 h-4 text-emerald-600" />
+              <div className="p-2 bg-primary/20 rounded-lg">
+                <DollarSign className="w-4 h-4 text-primary" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Valor Total</p>
@@ -447,11 +447,11 @@ export default function Projetos() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5">
+        <Card className="rounded-xl bg-gradient-to-br from-primary/10 to-primary/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500/20 rounded-lg">
-                <TrendingUp className="w-4 h-4 text-purple-600" />
+              <div className="p-2 bg-primary/20 rounded-lg">
+                <TrendingUp className="w-4 h-4 text-primary" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Valor Pago</p>

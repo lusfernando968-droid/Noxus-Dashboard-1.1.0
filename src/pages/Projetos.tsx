@@ -200,15 +200,15 @@ export default function Projetos() {
     return matchesStatus && matchesCliente && matchesSearch;
   });
 
-  // Estatísticas
+  // Estatísticas baseadas na lista filtrada
   const stats = {
-    total: projetos.length,
-    planejamento: projetos.filter(p => p.status === "planejamento").length,
-    andamento: projetos.filter(p => p.status === "andamento").length,
-    concluido: projetos.filter(p => p.status === "concluido").length,
-    cancelado: projetos.filter(p => p.status === "cancelado").length,
-    valorTotal: projetos.reduce((acc, p) => acc + (p.valor_total || 0), 0),
-    valorPago: projetos.reduce((acc, p) => acc + (p.valor_pago || 0), 0),
+    total: filteredProjetos.length,
+    planejamento: filteredProjetos.filter(p => p.status === "planejamento").length,
+    andamento: filteredProjetos.filter(p => p.status === "andamento").length,
+    concluido: filteredProjetos.filter(p => p.status === "concluido").length,
+    cancelado: filteredProjetos.filter(p => p.status === "cancelado").length,
+    valorTotal: filteredProjetos.reduce((acc, p) => acc + (p.valor_total || 0), 0),
+    valorPago: filteredProjetos.reduce((acc, p) => acc + (p.valor_pago || 0), 0),
   };
 
   if (loading) {

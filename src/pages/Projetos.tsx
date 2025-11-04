@@ -81,13 +81,43 @@ export default function Projetos() {
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editingProjetoId, setEditingProjetoId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  const [viewMode, setViewMode] = useState<"cards" | "table" | "kanban">("cards");
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
   const [clienteFilter, setClienteFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Atualização de status (usado pelo Kanban)
+  const handleStatusChange = async (projetoId: string, newStatus: Status) => {
+    try {
+      // Atualiza otimisticamente no estado local
+      setProjetos((prev) => prev.map((p) => (p.id === projetoId ? { ...p, status: newStatus } : p)));
+
+      // Persistir no Supabase
+      const { error } = await supabase
+        .from("projetos")
+        .update({ status: newStatus })
+        .eq("id", projetoId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Status atualizado",
+        description: `Projeto movido para ${statusLabels[newStatus]}`,
+      });
+    } catch (err) {
+      console.error("Erro ao atualizar status:", err);
+      toast({
+        title: "Erro ao atualizar status",
+        description: "Não foi possível alterar o status do projeto.",
+        variant: "destructive",
+      });
+      // Em caso de erro, recarrega dados para voltar estado
+      fetchProjetos();
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -218,6 +248,116 @@ export default function Projetos() {
       </div>
     );
   }
+
+  // ===== Kanban =====
+  const kanbanStatuses: Status[] = ["planejamento", "andamento", "concluido", "cancelado"];
+
+  const renderKanbanCard = (projeto: Projeto) => {
+    const StatusIcon = statusIcons[projeto.status];
+    const valorPendente = (projeto.valor_total || 0) - (projeto.valor_pago || 0);
+    return (
+      <Card
+        key={projeto.id}
+        className="rounded-xl hover:shadow transition-all"
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.setData("text/plain", projeto.id);
+          e.dataTransfer.effectAllowed = "move";
+        }}
+      >
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <StatusIcon className="w-4 h-4 text-muted-foreground shrink-0" />
+              <CardTitle className="text-sm font-semibold truncate">{projeto.titulo}</CardTitle>
+            </div>
+            <Badge variant="outline" className={statusColors[projeto.status]}>
+              {statusLabels[projeto.status]}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="text-xs text-muted-foreground truncate">{projeto.clientes?.nome}</div>
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Progresso</span>
+              <span className="font-medium">{projeto.progresso}%</span>
+            </div>
+            <Progress value={projeto.progresso} className="h-2" />
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <div className="font-medium text-foreground">R$ {(projeto.valor_pago || 0).toLocaleString()}</div>
+              <div className="text-muted-foreground">de R$ {(projeto.valor_total || 0).toLocaleString()}</div>
+            </div>
+            <div>
+              <div className="font-medium text-foreground">R$ {valorPendente.toLocaleString()}</div>
+              <div className="text-muted-foreground">pendente</div>
+            </div>
+          </div>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => navigate(`/projetos/${projeto.id}`)}
+              title="Abrir"
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => handleOpenBuilder(projeto.id)}
+              title="Editar"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderKanbanColumn = (status: Status) => {
+    const columnProjects = filteredProjetos.filter((p) => p.status === status);
+    return (
+      <div
+        key={status}
+        className="bg-muted/30 rounded-xl p-3 flex flex-col gap-3 min-h-[300px]"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          const draggedId = e.dataTransfer.getData("text/plain");
+          if (draggedId) {
+            handleStatusChange(draggedId, status);
+          }
+        }}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            {status === "planejamento" && <FileText className="w-4 h-4 text-muted-foreground" />}
+            {status === "andamento" && <PlayCircle className="w-4 h-4 text-muted-foreground" />}
+            {status === "concluido" && <CheckCircle className="w-4 h-4 text-muted-foreground" />}
+            {status === "cancelado" && <XCircle className="w-4 h-4 text-muted-foreground" />}
+            <span className="text-sm font-medium">{statusLabels[status]}</span>
+          </div>
+          <Badge variant="outline" className="text-xs">{columnProjects.length}</Badge>
+        </div>
+
+        {columnProjects.length === 0 ? (
+          <div className="text-xs text-muted-foreground py-8 text-center border border-dashed rounded-lg">
+            Arraste projetos para cá
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {columnProjects.map(renderKanbanCard)}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderProjectCard = (projeto: Projeto) => {
     const StatusIcon = statusIcons[projeto.status];
@@ -520,6 +660,14 @@ export default function Projetos() {
           >
             <Table2 className="w-4 h-4" />
           </Button>
+          <Button
+            variant={viewMode === "kanban" ? "default" : "outline"}
+            size="icon"
+            className="rounded-lg"
+            onClick={() => setViewMode("kanban")}
+          >
+            <List className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
@@ -544,6 +692,12 @@ export default function Projetos() {
       ) : viewMode === "cards" ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredProjetos.map(renderProjectCard)}
+        </div>
+      ) : viewMode === "kanban" ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {kanbanStatuses
+            .filter((s) => (statusFilter === "all" ? true : s === statusFilter))
+            .map(renderKanbanColumn)}
         </div>
       ) : (
         <Card className="rounded-xl">

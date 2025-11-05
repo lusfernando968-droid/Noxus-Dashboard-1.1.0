@@ -9,7 +9,7 @@ const menuItems = [
   { icon: Briefcase, label: "Projetos", path: "/projetos" },
   { icon: Calendar, label: "Agendamentos", path: "/agendamentos" },
   { icon: DollarSign, label: "Financeiro", path: "/financeiro" },
-  { icon: Package, label: "Estoque", path: "/estoque" },
+  
 ];
 
 export function Sidebar() {

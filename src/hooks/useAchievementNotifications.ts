@@ -8,7 +8,7 @@ export type AchievementType =
   | 'projetos_milestone' 
   | 'financeiro_milestone'
   | 'agendamentos_milestone'
-  | 'estoque_milestone'
+  
   | 'sessoes_milestone'
   | 'receita_milestone';
 
@@ -55,13 +55,7 @@ const ACHIEVEMENT_CONFIGS: Record<AchievementType, Omit<Achievement, 'id' | 'cur
     icon: '📅',
     threshold: 15
   },
-  estoque_milestone: {
-    type: 'estoque_milestone',
-    title: 'Mestre do Estoque',
-    description: 'Cadastrou {threshold} itens no estoque!',
-    icon: '📦',
-    threshold: 25
-  },
+
   sessoes_milestone: {
     type: 'sessoes_milestone',
     title: 'Tatuador Produtivo',
@@ -153,9 +147,7 @@ export const useAchievementNotifications = () => {
     checkAchievement('agendamentos_milestone', count);
   }, [checkAchievement]);
 
-  const checkEstoqueMilestone = useCallback((count: number) => {
-    checkAchievement('estoque_milestone', count);
-  }, [checkAchievement]);
+  
 
   const checkSessoesMilestone = useCallback((count: number) => {
     checkAchievement('sessoes_milestone', count);
@@ -201,7 +193,7 @@ export const useAchievementNotifications = () => {
     checkProjetosMilestone,
     checkFinanceiroMilestone,
     checkAgendamentosMilestone,
-    checkEstoqueMilestone,
+    
     checkSessoesMilestone,
     checkReceitaMilestone,
     

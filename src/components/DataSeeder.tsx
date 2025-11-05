@@ -219,7 +219,7 @@ export function DataSeeder() {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      // Segundo, configurar as indicações usando o sistema temporário
+      // Segundo, configurar as indicações diretamente no banco
       for (let i = 0; i < clientesData.length; i++) {
         const cliente = clientesData[i];
         setProgress(50 + i / clientesData.length * 50); // Segunda metade do progresso
@@ -228,7 +228,18 @@ export function DataSeeder() {
           const clienteId = clienteMap.get(cliente.nome);
           const indicadorId = clienteMap.get(cliente.indicado_por);
           if (clienteId && indicadorId) {
-            setReferral(clienteId, indicadorId);
+            try {
+              const { error: updErr } = await supabase
+                .from("clientes")
+                .update({ indicado_por: indicadorId as any })
+                .eq("id", clienteId);
+              if (updErr) {
+                // Fallback temporário se coluna ainda não existir
+                setReferral(clienteId, indicadorId);
+              }
+            } catch {
+              setReferral(clienteId, indicadorId);
+            }
           }
         }
         await new Promise(resolve => setTimeout(resolve, 50));

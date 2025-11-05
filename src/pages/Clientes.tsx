@@ -304,7 +304,8 @@ const Clientes = () => {
           ltv,
           projetos_count,
           transacoes_count,
-          indicado_por: getReferral(cliente.id), // Usar dados temporários
+          // Prioriza valor do banco; usa temporário apenas como fallback
+          indicado_por: (cliente as any).indicado_por ?? getReferral(cliente.id),
           cidades: cidadesPorCliente[cliente.id] || undefined
         };
       });
@@ -346,8 +347,11 @@ const Clientes = () => {
       };
       if (formData.email) payload.email = formData.email;
       if (formData.telefone) payload.telefone = formData.telefone;
-      if (formData.instagram) payload.instagram = formData.instagram;
-      if (formData.cidade) payload.cidade = formData.cidade;
+      // Campos adicionais (instagram, cidade) serão tratados após migrações específicas
+      // Persistir indicação diretamente no banco, se fornecida
+      if (formData.indicado_por && formData.indicado_por !== "none") {
+        payload.indicado_por = formData.indicado_por;
+      }
 
       const { data, error } = await supabase
         .from("clientes")
@@ -355,10 +359,7 @@ const Clientes = () => {
         .select();
       if (error) throw error;
 
-      // Salvar indicação temporariamente se foi fornecida
-      if (data && data[0] && formData.indicado_por && formData.indicado_por !== "none") {
-        setReferral(data[0].id, formData.indicado_por);
-      }
+      // Indicação já persistida no banco (fallback local não necessário aqui)
 
       // Se houver cidades selecionadas, garantir criação e vincular ao cliente
       if (data && data[0] && selectedCities.length > 0) {
@@ -539,17 +540,31 @@ const Clientes = () => {
       } = await supabase.from("clientes").update(clienteData).eq("id", clienteId);
       if (error) throw error;
 
-      // Salvar indicação temporariamente
+      // Persistir indicação no banco se foi alterada
       if (indicado_por !== undefined) {
         const referralValue = indicado_por === "none" ? null : indicado_por;
-        setReferral(clienteId, referralValue);
+        try {
+          const { error: refErr } = await supabase
+            .from("clientes")
+            .update({ indicado_por: referralValue as any })
+            .eq("id", clienteId);
+          if (refErr) throw refErr;
 
-        // Atualizar estado local imediatamente para resposta rápida
-        setClientes(prev => prev.map(cliente => cliente.id === clienteId ? {
-          ...cliente,
-          ...clienteData,
-          indicado_por: referralValue
-        } : cliente));
+          // Atualizar estado local imediatamente
+          setClientes(prev => prev.map(cliente => cliente.id === clienteId ? {
+            ...cliente,
+            ...clienteData,
+            indicado_por: referralValue || null
+          } : cliente));
+        } catch (refError) {
+          // Fallback: salvar temporariamente caso coluna não exista
+          setReferral(clienteId, referralValue);
+          setClientes(prev => prev.map(cliente => cliente.id === clienteId ? {
+            ...cliente,
+            ...clienteData,
+            indicado_por: referralValue || null
+          } : cliente));
+        }
       } else {
         // Atualizar apenas dados básicos se não há mudança de indicação
         setClientes(prev => prev.map(cliente => cliente.id === clienteId ? {

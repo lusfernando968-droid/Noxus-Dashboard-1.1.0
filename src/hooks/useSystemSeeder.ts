@@ -52,12 +52,22 @@ export function useSystemSeeder() {
       if (data && data[0]?.id) clienteMap.set(c.nome, data[0].id);
       await new Promise(r => setTimeout(r, 60));
     }
-    // Indicações temporárias
+    // Persistir indicações no banco (fallback temporário se necessário)
     for (const c of clientesData) {
       if (c.indicado_por) {
         const cid = clienteMap.get(c.nome);
         const pid = clienteMap.get(c.indicado_por);
-        if (cid && pid) setReferral(cid, pid);
+        if (cid && pid) {
+          try {
+            const { error } = await supabase
+              .from("clientes")
+              .update({ indicado_por: pid as any })
+              .eq("id", cid);
+            if (error) throw error;
+          } catch {
+            setReferral(cid, pid);
+          }
+        }
       }
     }
   }

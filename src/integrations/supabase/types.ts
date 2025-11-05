@@ -68,6 +68,7 @@ export type Database = {
           email: string
           endereco: string | null
           id: string
+          indicado_por: string | null
           nome: string
           telefone: string
           updated_at: string
@@ -79,6 +80,7 @@ export type Database = {
           email: string
           endereco?: string | null
           id?: string
+          indicado_por?: string | null
           nome: string
           telefone: string
           updated_at?: string
@@ -90,12 +92,84 @@ export type Database = {
           email?: string
           endereco?: string | null
           id?: string
+          indicado_por?: string | null
           nome?: string
           telefone?: string
           updated_at?: string
           user_id?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_indicado_por_fkey"
+            columns: ["indicado_por"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cidades: {
+        Row: {
+          id: string
+          user_id: string
+          nome: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          nome: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          nome?: string
+          created_at?: string
+          updated_at?: string
+        }
         Relationships: []
+      }
+      clientes_cidades: {
+        Row: {
+          id: string
+          user_id: string
+          cliente_id: string
+          cidade_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          cliente_id: string
+          cidade_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          cliente_id?: string
+          cidade_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_cidades_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clientes_cidades_cidade_id_fkey"
+            columns: ["cidade_id"]
+            isOneToOne: false
+            referencedRelation: "cidades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -104,6 +178,7 @@ export type Database = {
           created_at: string
           id: string
           nome_completo: string
+          username: string | null
           telefone: string | null
           updated_at: string
         }
@@ -113,6 +188,7 @@ export type Database = {
           created_at?: string
           id: string
           nome_completo: string
+          username?: string | null
           telefone?: string | null
           updated_at?: string
         }
@@ -122,6 +198,7 @@ export type Database = {
           created_at?: string
           id?: string
           nome_completo?: string
+          username?: string | null
           telefone?: string | null
           updated_at?: string
         }

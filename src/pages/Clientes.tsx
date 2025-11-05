@@ -84,8 +84,12 @@ const Clientes = () => {
   });
   // Ref para container com scroll horizontal da tabela
   const tableScrollRef = useRef<HTMLDivElement>(null);
+  // Ref para container visual da tabela (Card) para observar visibilidade
+  const tableContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
+  // Visibilidade da tabela na viewport (>= 50%)
+  const [isTableVisible50, setIsTableVisible50] = useState(false);
 
   const updateArrowVisibility = () => {
     const el = tableScrollRef.current;
@@ -120,6 +124,25 @@ const Clientes = () => {
       window.removeEventListener('resize', onResize);
     };
   }, [clientes.length, viewMode]);
+
+  // Observer para mostrar setas apenas quando a tabela estiver >= 50% visível na viewport
+  useEffect(() => {
+    const el = tableContainerRef.current;
+    if (!el) {
+      setIsTableVisible50(false);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        const visible = entry.isIntersecting && entry.intersectionRatio >= 0.5;
+        setIsTableVisible50(visible);
+      },
+      { threshold: [0.5] }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [viewMode]);
   type CidadeOption = { id?: string; nome: string; created_at?: string };
   const [availableCities, setAvailableCities] = useState<CidadeOption[]>([]);
   const [selectedCities, setSelectedCities] = useState<CidadeOption[]>([]);
@@ -1392,8 +1415,8 @@ const Clientes = () => {
                        <p>Nenhum cliente encontrado.</p>
                        <p className="text-sm mt-1">Clique em "Adicionar Cliente" para começar.</p>
                      </div>
-                   </Card> : <Card className="rounded-xl overflow-hidden relative">
-                     <div className="overflow-x-auto" ref={tableScrollRef}>
+                   </Card> : <Card className="rounded-xl overflow-hidden relative" ref={tableContainerRef}>
+                     <div className="overflow-x-auto scroll-smooth" ref={tableScrollRef}>
                        <div className="min-w-[1600px]">
                          <Table>
                          <TableHeader>
@@ -1408,7 +1431,7 @@ const Clientes = () => {
                              <TableHead className="min-w-[180px]">Indicado por</TableHead>
                              <TableHead className="min-w-[200px]">Indicados</TableHead>
                              <TableHead className="min-w-[120px]">Projetos</TableHead>
-                             <TableHead className="text-right min-w-[150px]">Ações</TableHead>
+                             <TableHead className="text-right min-w-[150px] sticky right-0 bg-background z-10">Ações</TableHead>
                            </TableRow>
                          </TableHeader>
                          <TableBody>
@@ -1480,29 +1503,29 @@ const Clientes = () => {
                                      <div className="text-xs">{cliente.transacoes_count} transação(ões)</div>
                                    </div>
                                  </TableCell>
-                                 <TableCell className="text-right">
-                                   <div className="flex gap-1 justify-end">
-                                     {isEditing ? <>
-                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-success" onClick={() => saveEdit(cliente.id)} title="Salvar">
-                                           <Check className="w-4 h-4" />
-                                         </Button>
-                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={() => cancelEditing(cliente.id)} title="Cancelar">
-                                           <X className="w-4 h-4" />
-                                         </Button>
-                                       </> : <>
-                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={() => navigate(`/projetos?cliente=${cliente.id}`)} title="Ver projetos">
-                                           <FolderOpen className="w-4 h-4" />
-                                         </Button>
-                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={() => startEditing(cliente.id, cliente)} title="Editar">
-                                           <Pencil className="w-4 h-4" />
-                                         </Button>
-                                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-destructive" onClick={() => handleDelete(cliente.id)} title="Deletar">
-                                           <Trash2 className="w-4 h-4" />
-                                         </Button>
-                                       </>}
-                                   </div>
-                                 </TableCell>
-                               </TableRow>;
+                                <TableCell className="text-right sticky right-0 bg-background z-10">
+                                  <div className="flex gap-1 justify-end relative z-20">
+                                    {isEditing ? <>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-success hover:bg-success/10" onClick={() => saveEdit(cliente.id)} title="Salvar">
+                                          <Check className="w-4 h-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-muted/40" onClick={() => cancelEditing(cliente.id)} title="Cancelar">
+                                          <X className="w-4 h-4" />
+                                        </Button>
+                                      </> : <>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-muted/40 hover:text-foreground" onClick={() => navigate(`/projetos?cliente=${cliente.id}`)} title="Ver projetos">
+                                          <FolderOpen className="w-4 h-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-muted/40 hover:text-foreground" onClick={() => startEditing(cliente.id, cliente)} title="Editar">
+                                          <Pencil className="w-4 h-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl text-destructive hover:bg-destructive/10" onClick={() => handleDelete(cliente.id)} title="Deletar">
+                                          <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                      </>}
+                                  </div>
+                                </TableCell>
+                              </TableRow>;
                   })}
                          </TableBody>
                          </Table>
@@ -1513,7 +1536,7 @@ const Clientes = () => {
                 </div>
         </TabsContent>
         {/* Overlay de setas visível apenas na visualização de tabela */}
-        {viewMode === 'table' && (
+        {viewMode === 'table' && isTableVisible50 && (
           <>
             {showLeftArrow && (
               <Button

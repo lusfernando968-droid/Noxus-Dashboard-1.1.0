@@ -103,5 +103,6 @@
   },
   "overrides": {
     "ts-interface-checker": "0.1.9"
-  }
+  },
+  "packageManager": "pnpm@8.15.4"
 }

@@ -31,6 +31,13 @@
     --warning: 38 92% 50%; /* Amber/Orange padrão para avisos */
     --info: 199 89% 48%; /* Azul padrão para informações */
     --radius: 1rem;
+    /* Cores por módulo (fallbacks) */
+    --projects: 271 91% 65%;
+    --finance: 142 71% 45%;
+    --clients: 199 89% 48%;
+    --schedules: 38 92% 50%;
+    --sales: 347 77% 50%;
+    --metas: 280 79% 70%;
   }
 
   .dark {
@@ -58,6 +65,13 @@
     /* Variáveis no modo escuro */
     --warning: 38 92% 50%;
     --info: 199 89% 48%;
+    /* Cores por módulo (fallbacks dark) */
+    --projects: 271 91% 65%;
+    --finance: 142 71% 45%;
+    --clients: 199 89% 48%;
+    --schedules: 38 92% 50%;
+    --sales: 347 77% 50%;
+    --metas: 280 79% 70%;
   }
 
   /* Tema Ocean */
@@ -164,6 +178,37 @@
     --accent: var(--primary);
     --accent-foreground: var(--primary-foreground);
     --ring: var(--primary);
+  }
+
+  /* Tema Noxus (variado por módulo) */
+  .theme-noxus {
+    /* Base UI */
+    --primary: 271 91% 65%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 271 91% 65%;
+    --accent-foreground: 0 0% 100%;
+    --ring: 271 91% 65%;
+
+    /* Paleta por módulo */
+    --projects: 271 91% 65%;   /* Violeta */
+    --finance: 142 71% 45%;    /* Verde */
+    --clients: 199 89% 48%;    /* Azul */
+    --schedules: 38 92% 50%;   /* Laranja */
+    --sales: 347 77% 50%;      /* Rosa/Fúcsia */
+    --metas: 280 79% 70%;      /* Roxo claro */
+  }
+
+  .theme-noxus.dark {
+    --primary: 271 91% 65%;
+    --accent: 271 91% 65%;
+    --ring: 271 91% 65%;
+    /* Mantém paleta por módulo no modo escuro */
+    --projects: 271 91% 65%;
+    --finance: 142 71% 45%;
+    --clients: 199 89% 48%;
+    --schedules: 38 92% 50%;
+    --sales: 347 77% 50%;
+    --metas: 280 79% 70%;
   }
 }
 

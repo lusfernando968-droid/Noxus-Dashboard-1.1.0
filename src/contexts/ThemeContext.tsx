@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 
 type Theme = "light" | "dark" | "system";
-type ColorTheme = "default" | "ocean" | "sunset" | "forest" | "purple" | "rose" | "black" | "custom";
+type ColorTheme = "noxus" | "default" | "ocean" | "sunset" | "forest" | "purple" | "rose" | "black" | "custom";
 
 type ThemeContextType = {
   theme: Theme;
@@ -18,6 +19,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { playSound } = useSoundEffects();
+  const location = useLocation();
   
   const [theme, setThemeState] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem("theme") as Theme | null;
@@ -31,7 +33,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const [colorTheme, setColorThemeState] = useState<ColorTheme>(() => {
     const savedColorTheme = localStorage.getItem("colorTheme") as ColorTheme;
-    return savedColorTheme || "default";
+    // Define "noxus" como tema padrão caso não haja preferência salva
+    return savedColorTheme || "noxus";
   });
 
   const [customColor, setCustomColorState] = useState<string>(() => {
@@ -63,7 +66,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     
     // Remove todas as classes de tema
     root.classList.remove("light", "dark");
-    root.classList.remove("theme-ocean", "theme-sunset", "theme-forest", "theme-purple", "theme-rose", "theme-black", "theme-custom");
+    root.classList.remove(
+      "theme-noxus",
+      "theme-ocean",
+      "theme-sunset",
+      "theme-forest",
+      "theme-purple",
+      "theme-rose",
+      "theme-black",
+      "theme-custom"
+    );
     
     // Adiciona o tema de luz/escuridão efetivo
     root.classList.add(effectiveTheme);
@@ -92,6 +104,44 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("colorTheme", colorTheme);
     localStorage.setItem("customColor", customColor);
   }, [effectiveTheme, theme, colorTheme, customColor]);
+
+  // Varia a cor do tema NOXUS conforme o módulo/rota atual
+  useEffect(() => {
+    const root = window.document.documentElement;
+
+    // Apenas aplicar variação quando o tema de cor for "noxus"
+    if (colorTheme !== "noxus") {
+      // Limpa possíveis overrides quando o usuário trocar de tema
+      root.style.removeProperty("--primary");
+      root.style.removeProperty("--accent");
+      root.style.removeProperty("--ring");
+      return;
+    }
+
+    const path = location.pathname.toLowerCase();
+
+    // Mapeia rotas para variáveis da paleta Noxus
+    const moduleVar = path.startsWith("/clientes")
+      ? "--clients"
+      : path.startsWith("/projetos")
+      ? "--projects"
+      : path.startsWith("/agendamentos")
+      ? "--schedules"
+      : path.startsWith("/financeiro")
+      ? "--finance"
+      : path.startsWith("/vendas")
+      ? "--sales"
+      : path.startsWith("/perfil")
+      ? "--metas"
+      : "--projects"; // página inicial e demais
+
+    // Sobrescreve as variáveis principais com a cor do módulo ativo
+    root.style.setProperty("--primary", `var(${moduleVar})`);
+    root.style.setProperty("--accent", `var(${moduleVar})`);
+    root.style.setProperty("--ring", `var(${moduleVar})`);
+    // Foreground permanece como branco para garantir contraste
+    root.style.setProperty("--primary-foreground", "0 0% 100%");
+  }, [location.pathname, colorTheme]);
 
   const toggleTheme = () => {
     setThemeState((prev) => {

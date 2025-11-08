@@ -3,6 +3,7 @@ import { Header } from "./Header";
 import { DockNav } from "./DockNav";
 import { Sidebar } from "./Sidebar";
 import { useNavigation } from "@/contexts/NavigationContext";
+import { FloatingAIChat } from "@/components/layout/FloatingAIChat";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -49,6 +50,9 @@ export function Layout({ children }: LayoutProps) {
         {showDock && isNavigationVisible && (
           <DockNav />
         )}
+
+        {/* Chat de IA flutuante */}
+        <FloatingAIChat />
       </div>
       
       {/* Dock suspenso quando visibilidade desabilitada */}

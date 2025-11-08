@@ -14,7 +14,8 @@ export function SchedulesTab({ agendamentos }: SchedulesTabProps) {
       return { primaryColor: "hsl(220 90% 50%)", primaryFade: "hsl(220 90% 50% / 0.5)" };
     }
     const root = document.documentElement;
-    const hsl = getComputedStyle(root).getPropertyValue("--primary").trim();
+    const moduleVar = getComputedStyle(root).getPropertyValue("--schedules").trim();
+    const hsl = moduleVar || getComputedStyle(root).getPropertyValue("--primary").trim();
     const base = hsl ? `hsl(${hsl})` : "hsl(220 90% 50%)";
     const fade = hsl ? `hsl(${hsl} / 0.5)` : "hsl(220 90% 50% / 0.5)";
     return { primaryColor: base, primaryFade: fade };

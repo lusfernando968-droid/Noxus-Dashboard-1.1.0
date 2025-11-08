@@ -17,6 +17,7 @@ import Agendamentos from "./pages/Agendamentos";
 import Financeiro from "./pages/Financeiro";
 
 import NotFound from "./pages/NotFound";
+import Vendas from "./pages/Vendas";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const AppContent = () => {
   return (
     <Routes>
       <Route path="/auth" element={<Auth />} />
+      <Route path="/vendas" element={<Vendas />} />
       <Route path="/" element={<ProtectedRoute><Layout><Index /></Layout></ProtectedRoute>} />
       <Route path="/perfil" element={<ProtectedRoute><Layout><Perfil /></Layout></ProtectedRoute>} />
       <Route path="/clientes" element={<ProtectedRoute><Layout><Clientes /></Layout></ProtectedRoute>} />

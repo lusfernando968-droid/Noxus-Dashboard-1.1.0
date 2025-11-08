@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
   Clock,
   RefreshCw
 } from "lucide-react";
+import { chat as geminiChat, ChatMessage } from "@/integrations/gemini/client";
 
 interface SmartInsightsProps {
   transacoes: any[];
@@ -82,11 +83,171 @@ export function SmartInsights({ transacoes, clientes, projetos, agendamentos }: 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshAt, setLastRefreshAt] = useState<number>(Date.now());
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const [insights, setInsights] = useState<Insight[]>([
+    // Base inicial (fallback) — será substituída por IA quando disponível
+    {
+      id: '1',
+      type: 'warning',
+      title: 'Clientes Inativos Detectados',
+      description: 'Parte dos clientes está inativa há mais de 60 dias. Risco de churn alto.',
+      impact: 'high',
+      action: 'Enviar campanha de reativação',
+      icon: AlertTriangle,
+      color: 'text-red-600',
+      bgColor: 'bg-red-500/10'
+    },
+    {
+      id: '2',
+      type: 'opportunity',
+      title: 'Oportunidade de Upsell',
+      description: 'Clientes com histórico de pequenos serviços podem aceitar projetos maiores.',
+      impact: 'high',
+      action: 'Criar proposta personalizada',
+      icon: TrendingUp,
+      color: 'text-green-600',
+      bgColor: 'bg-green-500/10'
+    },
+  ]);
 
   const handleInsightClick = (insight: Insight) => {
     setSelectedInsight(insight);
     setIsModalOpen(true);
   };
+
+  const contextSummary = useMemo(() => {
+    try {
+      const norm = (v: any) => String(v || '').toLowerCase();
+
+      const clientesCount = clientes?.length || 0;
+      const projetosCount = projetos?.length || 0;
+      const agendamentosCount = agendamentos?.length || 0;
+      const transacoesCount = transacoes?.length || 0;
+
+      // Ticket médio (somente RECEITA)
+      const receitas = (transacoes || []).filter((t: any) => norm(t?.tipo) === 'receita');
+      const totalReceitas = receitas.reduce((sum: number, t: any) => sum + Number(t?.valor || 0), 0);
+      const ticketMedio = receitas.length ? totalReceitas / receitas.length : 0;
+
+      // Recorrência de clientes (clientes com 2+ agendamentos não cancelados)
+      const validAg = (agendamentos || []).filter((a: any) => norm(a?.status) !== 'cancelado');
+      const porCliente: Record<string, number> = {};
+      for (const a of validAg) {
+        const cid = String(a?.cliente_id || a?.clienteId || a?.cliente || '');
+        if (!cid) continue;
+        porCliente[cid] = (porCliente[cid] || 0) + 1;
+      }
+      const clientesUnicos = Object.keys(porCliente).length;
+      const clientesRecorrentes = Object.values(porCliente).filter((n) => n >= 2).length;
+      const taxaRecorrencia = clientesUnicos ? Math.round((clientesRecorrentes / clientesUnicos) * 100) : 0;
+
+      // Cancelamentos
+      const cancelados = (agendamentos || []).filter((a: any) => norm(a?.status) === 'cancelado').length;
+      const taxaCancelamento = agendamentosCount ? Math.round((cancelados / agendamentosCount) * 100) : 0;
+
+      const clientesTop = (clientes || [])
+        .map((c: any) => c?.nome)
+        .filter((n: any) => typeof n === 'string' && n.trim().length)
+        .slice(0, 5);
+      const projetosTop = (projetos || [])
+        .map((p: any) => p?.titulo)
+        .filter((t: any) => typeof t === 'string' && t.trim().length)
+        .slice(0, 5);
+
+      return [
+        `Clientes(30d): ${clientesCount}`,
+        `Projetos(30d): ${projetosCount}`,
+        `Agendamentos(30d): ${agendamentosCount}`,
+        `Transações(30d): ${transacoesCount}`,
+        `Ticket médio: R$ ${Math.round(ticketMedio).toLocaleString('pt-BR')}`,
+        `Recorrência: ${taxaRecorrencia}% (${clientesRecorrentes}/${clientesUnicos})`,
+        `Cancelamentos: ${cancelados} (${taxaCancelamento}%)`,
+        clientesTop.length ? `Clientes foco: ${clientesTop.join(', ')}` : '',
+        projetosTop.length ? `Projetos destaque: ${projetosTop.join(', ')}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n');
+    } catch {
+      return '';
+    }
+  }, [clientes, projetos, agendamentos, transacoes]);
+
+  function mapTypeToIcon(type: Insight['type']) {
+    switch (type) {
+      case 'warning':
+        return AlertTriangle;
+      case 'opportunity':
+        return Lightbulb;
+      case 'trend':
+        return TrendingUp;
+      case 'recommendation':
+        return Brain;
+      default:
+        return Brain;
+    }
+  }
+
+  async function generateAiInsights() {
+    setIsRefreshing(true);
+    setAiError(null);
+    try {
+      const sys: ChatMessage = {
+        role: 'system',
+        content:
+          'Você é uma IA de estratégia de negócios. Gere insights práticos baseados nos dados do sistema. Retorne APENAS JSON válido no formato: {"insights":[{"id":"string","type":"warning|opportunity|trend|recommendation","title":"string","description":"string","impact":"high|medium|low","action":"string"}]}.'
+      };
+      const userPrompt = `Contexto (30d):\n${contextSummary}\n\nRegras:\n- Foque em recomendações acionáveis e sucintas.\n- Use títulos objetivos.\n- Não inclua dados sensíveis.\n- Priorize 4-6 itens.`;
+      const response = await geminiChat([sys, { role: 'user', content: userPrompt }]);
+
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(response.content);
+      } catch {
+        // Se não vier JSON, tenta extrair bloco JSON simples
+        const match = response.content.match(/\{[\s\S]*\}/);
+        parsed = match ? JSON.parse(match[0]) : null;
+      }
+
+      const items: Insight[] = (parsed?.insights || []).map((i: any, idx: number) => {
+        const icon = mapTypeToIcon(i.type);
+        const colorMap: Record<string, string> = {
+          warning: 'text-red-600',
+          opportunity: 'text-green-600',
+          trend: 'text-blue-600',
+          recommendation: 'text-purple-600',
+        };
+        const bgMap: Record<string, string> = {
+          warning: 'bg-red-500/10',
+          opportunity: 'bg-green-500/10',
+          trend: 'bg-blue-500/10',
+          recommendation: 'bg-purple-500/10',
+        };
+        return {
+          id: i.id || String(idx + 1),
+          type: i.type,
+          title: i.title,
+          description: i.description,
+          impact: i.impact,
+          action: i.action,
+          icon,
+          color: colorMap[i.type] || 'text-muted-foreground',
+          bgColor: bgMap[i.type] || 'bg-muted/20',
+        } as Insight;
+      });
+
+      if (items.length) {
+        setInsights(items);
+        setLastRefreshAt(Date.now());
+      } else {
+        setAiError('A IA não retornou insights válidos. Mantendo base padrão.');
+      }
+    } catch (e: any) {
+      setAiError(e?.message || 'Falha ao gerar insights com a IA');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }
 
   const renderDetailedContent = () => {
     if (!selectedInsight) return null;
@@ -213,64 +374,11 @@ export function SmartInsights({ transacoes, clientes, projetos, agendamentos }: 
     }
   };
   
-  // Simulação de insights baseados em IA (em produção, viriam de análise real dos dados)
-  const insights: Insight[] = [
-    {
-      id: '1',
-      type: 'warning',
-      title: 'Clientes Inativos Detectados',
-      description: '12 clientes não fazem agendamentos há mais de 60 dias. Risco de churn alto.',
-      impact: 'high',
-      action: 'Enviar campanha de reativação',
-      icon: AlertTriangle,
-      color: 'text-red-600',
-      bgColor: 'bg-red-500/10'
-    },
-    {
-      id: '2',
-      type: 'opportunity',
-      title: 'Oportunidade de Upsell',
-      description: '8 clientes com histórico de tatuagens pequenas podem estar prontos para projetos maiores.',
-      impact: 'high',
-      action: 'Criar proposta personalizada',
-      icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-500/10'
-    },
-    {
-      id: '3',
-      type: 'trend',
-      title: 'Tendência Sazonal Identificada',
-      description: 'Aumento de 35% em agendamentos nas sextas-feiras. Considere expandir horários.',
-      impact: 'medium',
-      action: 'Otimizar agenda',
-      icon: Calendar,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-500/10'
-    },
-    {
-      id: '4',
-      type: 'recommendation',
-      title: 'Preço Sugerido para Novos Serviços',
-      description: 'Baseado no mercado local, tatuagens coloridas podem ter preço 20% maior.',
-      impact: 'medium',
-      action: 'Revisar tabela de preços',
-      icon: DollarSign,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-500/10'
-    },
-    {
-      id: '5',
-      type: 'opportunity',
-      title: 'Horário de Pico Subutilizado',
-      description: 'Terças-feiras têm 40% menos agendamentos. Oportunidade para promoções.',
-      impact: 'low',
-      action: 'Criar promoção especial',
-      icon: Target,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-500/10'
-    }
-  ];
+  useEffect(() => {
+    // Gera automaticamente ao abrir, mas mantém fallback se quota estiver zerada
+    generateAiInsights();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Contadores para cards de topo padronizados
   const totalInsights = insights.length;
@@ -318,16 +426,18 @@ export function SmartInsights({ transacoes, clientes, projetos, agendamentos }: 
               variant="outline"
               size="sm"
               className="gap-2"
-              onClick={() => { setIsRefreshing(true); setLastRefreshAt(Date.now()); setTimeout(() => setIsRefreshing(false), 700); }}
+              onClick={generateAiInsights}
               data-clickable="true"
               disabled={isRefreshing}
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Atualizando…' : 'Atualizar'}
+              {isRefreshing ? 'Atualizando…' : 'Gerar com IA'}
             </Button>
           </div>
         </CardHeader>
       </Card>
+
+      {/* Chat embutido removido – utilizar apenas o chat flutuante global */}
 
       {/* Cards de resumo no topo - padrão das outras páginas */}
       {/* Marcador de última atualização (sutil) */}

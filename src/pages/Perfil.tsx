@@ -30,6 +30,7 @@ export default function Perfil() {
   const { toast } = useToast();
 
   const colorThemes = [
+    { id: "noxus" as const, name: "Noxus (Padrão)", colors: "bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500" },
     { id: "default" as const, name: "Roxo Padrão", colors: "bg-gradient-to-r from-purple-500 to-purple-600" },
     { id: "ocean" as const, name: "Oceano", colors: "bg-gradient-to-r from-cyan-500 to-blue-500" },
     { id: "sunset" as const, name: "Pôr do Sol", colors: "bg-gradient-to-r from-orange-500 to-pink-500" },
